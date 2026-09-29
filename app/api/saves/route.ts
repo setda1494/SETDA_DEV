@@ -1,1 +1,39 @@
-import{NextResponse}from"next/server";import{z}from"zod";import{currentUser}from"@/lib/auth";import{db}from"@/lib/db";const key=z.string().regex(/^[a-z0-9][a-z0-9_-]{1,63}$/),slot=z.string().regex(/^[a-zA-Z0-9_-]{1,32}$/);export async function GET(req:Request){const u=await currentUser();if(!u)return NextResponse.json({error:"unauthorized"},{status:401});const x=new URL(req.url),p=z.object({gameKey:key,slot}).safeParse({gameKey:x.searchParams.get("gameKey"),slot:x.searchParams.get("slot")??"default"});if(!p.success)return NextResponse.json({error:"invalid_request"},{status:400});return NextResponse.json({save:await db.gameSave.findUnique({where:{userId_gameKey_slot:{userId:u.id,...p.data}}})})}const body=z.object({gameKey:key,slot:slot.default("default"),version:z.number().int().min(1).max(100000),payload:z.unknown()});export async function PUT(req:Request){const u=await currentUser();if(!u)return NextResponse.json({error:"unauthorized"},{status:401});const raw=await req.text();if(Buffer.byteLength(raw)>262144)return NextResponse.json({error:"payload_too_large"},{status:413});let j:unknown;try{j=JSON.parse(raw)}catch{return NextResponse.json({error:"invalid_json"},{status:400})}const p=body.safeParse(j);if(!p.success)return NextResponse.json({error:"invalid_request"},{status:400});const d=p.data,s=await db.gameSave.upsert({where:{userId_gameKey_slot:{userId:u.id,gameKey:d.gameKey,slot:d.slot}},create:{userId:u.id,gameKey:d.gameKey,slot:d.slot,version:d.version,payload:d.payload as object},update:{version:d.version,payload:d.payload as object}});return NextResponse.json({save:{gameKey:s.gameKey,slot:s.slot,version:s.version,updatedAt:s.updatedAt}})}
+import { NextResponse } from "next/server";
+import { currentUser } from "@/lib/auth";
+import { db } from "@/lib/db";
+import { asPrismaJson, gameSaveBody, gameSaveQuery, isSaveEnabledGame } from "@/lib/game-save";
+
+const MAX_BODY_BYTES=262144;
+const unavailable=()=>NextResponse.json({error:"service_unavailable"},{status:503});
+
+export async function GET(req:Request){
+  try{
+    const user=await currentUser();
+    if(!user)return NextResponse.json({error:"unauthorized"},{status:401});
+    const url=new URL(req.url);
+    const parsed=gameSaveQuery.safeParse({gameKey:url.searchParams.get("gameKey"),slot:url.searchParams.get("slot")??"default"});
+    if(!parsed.success)return NextResponse.json({error:"invalid_request"},{status:400});
+    if(!await isSaveEnabledGame(parsed.data.gameKey))return NextResponse.json({error:"game_not_available"},{status:404});
+    const save=await db.gameSave.findUnique({where:{userId_gameKey_slot:{userId:user.id,...parsed.data}}});
+    return NextResponse.json({save});
+  }catch{return unavailable()}
+}
+
+export async function PUT(req:Request){
+  try{
+    const user=await currentUser();
+    if(!user)return NextResponse.json({error:"unauthorized"},{status:401});
+    const length=Number(req.headers.get("content-length")??0);
+    if(Number.isFinite(length)&&length>MAX_BODY_BYTES)return NextResponse.json({error:"payload_too_large"},{status:413});
+    const raw=await req.text();
+    if(Buffer.byteLength(raw)>MAX_BODY_BYTES)return NextResponse.json({error:"payload_too_large"},{status:413});
+    let value:unknown;
+    try{value=JSON.parse(raw)}catch{return NextResponse.json({error:"invalid_json"},{status:400})}
+    const parsed=gameSaveBody.safeParse(value);
+    if(!parsed.success)return NextResponse.json({error:"invalid_request"},{status:400});
+    if(!await isSaveEnabledGame(parsed.data.gameKey))return NextResponse.json({error:"game_not_available"},{status:404});
+    const d=parsed.data;
+    const save=await db.gameSave.upsert({where:{userId_gameKey_slot:{userId:user.id,gameKey:d.gameKey,slot:d.slot}},create:{userId:user.id,gameKey:d.gameKey,slot:d.slot,version:d.version,payload:asPrismaJson(d.payload)},update:{version:d.version,payload:asPrismaJson(d.payload)}});
+    return NextResponse.json({save:{gameKey:save.gameKey,slot:save.slot,version:save.version,updatedAt:save.updatedAt}});
+  }catch{return unavailable()}
+}
