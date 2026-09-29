@@ -14,16 +14,17 @@ enum Role {
 }
 
 model User {
-  id           String     @id @default(cuid())
-  email        String     @unique
+  id           String         @id @default(cuid())
+  email        String         @unique
   displayName  String
   passwordHash String?
-  role         Role       @default(USER)
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
+  role         Role           @default(USER)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
   sessions     Session[]
   saves        GameSave[]
   auditLogs    AuditLog[]
+  ServiceToken ServiceToken[]
 }
 
 model Session {
@@ -61,16 +62,16 @@ enum ContentKind {
 }
 
 model ContentEntry {
-  id        String      @id @default(cuid())
-  kind      ContentKind
-  key       String
-  title     String
-  data      Json
-  published Boolean     @default(false)
-  createdAt DateTime    @default(now())
+  id         String      @id @default(cuid())
+  kind       ContentKind
+  key        String
+  title      String
+  data       Json
+  published  Boolean     @default(false)
+  createdAt  DateTime    @default(now())
   updatedAt  DateTime    @updatedAt
   archivedAt DateTime?
-  auditLogs   AuditLog[]
+  auditLogs  AuditLog[]
 
   @@unique([kind, key])
   @@index([kind, published])
@@ -91,4 +92,19 @@ model AuditLog {
 
   @@index([actorId, createdAt])
   @@index([contentId])
+}
+
+model ServiceToken {
+  id         String    @id @default(cuid())
+  name       String
+  tokenHash  String    @unique
+  userId     String
+  expiresAt  DateTime?
+  lastUsedAt DateTime?
+  revokedAt  DateTime?
+  createdAt  DateTime  @default(now())
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
 }

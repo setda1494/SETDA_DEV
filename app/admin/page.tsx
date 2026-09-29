@@ -37,7 +37,7 @@ export default async function Admin() {
         <div className="admin-row admin-head user-admin-row"><span>USER</span><span>ROLE</span><span>ACTIVITY</span><span>ACCESS</span></div>
         {users.map((target) => {
           const isSelf = target.id === user.id;
-          const canManage = user.role === Role.OWNER && !isSelf;
+          const canManage = user.role === Role.OWNER && !isSelf && target.role !== Role.SYSTEM;
           return <div className="admin-row user-admin-row" key={target.id}>
             <span><b>{target.displayName}</b><small>{target.email}<br/>Joined {target.createdAt.toISOString().slice(0, 10)}</small></span>
             <span className="status">{target.role}{isSelf ? " · YOU" : ""}</span>
@@ -45,10 +45,10 @@ export default async function Admin() {
             <span>{canManage ? <form className="role-form" action={changeUserRoleAction}>
               <input type="hidden" name="userId" value={target.id}/>
               <select name="role" defaultValue={target.role} aria-label={`Role for ${target.email}`}>
-                <option value={Role.USER}>USER</option><option value={Role.SYSTEM}>SYSTEM</option><option value={Role.OWNER}>OWNER</option>
+                <option value={Role.USER}>USER</option><option value={Role.OWNER}>OWNER</option>
               </select>
               <button className="btn" type="submit">Apply</button>
-            </form> : <small>{isSelf ? "Self role locked" : "Read only"}</small>}</span>
+            </form> : <small>{isSelf ? "Self role locked" : target.role === Role.SYSTEM ? "Service-managed" : "Read only"}</small>}</span>
           </div>;
         })}
       </div>
