@@ -1,0 +1,3 @@
+import{notFound}from"next/navigation";import{getProject,projects}from"@/lib/site-data";
+export function generateStaticParams(){return projects.filter(p=>p.runtime==="web"&&p.webGame?.enabled).map(p=>({slug:p.slug}))}
+export default async function Play({params}:{params:Promise<{slug:string}>}){const{slug}=await params;const p=getProject(slug);if(!p||p.runtime!=="web"||!p.webGame?.enabled||!p.webGame.entry)notFound();return <div className="play-shell"><div className="play-head"><div><p className="eyebrow">WEB GAME</p><h1>{p.name}</h1></div><span className="status">Browser runtime</span></div><iframe className="game-frame" src={p.webGame.entry} title={p.name} allow="fullscreen; gamepad" sandbox="allow-scripts allow-same-origin allow-pointer-lock allow-forms"/></div>}
