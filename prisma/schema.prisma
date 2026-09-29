@@ -68,8 +68,9 @@ model ContentEntry {
   data      Json
   published Boolean     @default(false)
   createdAt DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
-  auditLogs AuditLog[]
+  updatedAt  DateTime    @updatedAt
+  archivedAt DateTime?
+  auditLogs   AuditLog[]
 
   @@unique([kind, key])
   @@index([kind, published])

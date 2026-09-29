@@ -25,7 +25,7 @@ function mediaFrom(key:string,title:string,data:unknown):ProjectMedia|null{
  return {id:key,projectSlug:data.projectSlug,kind:data.kind,title,caption:typeof data.caption==="string"?data.caption:undefined,src:data.src,poster:typeof data.poster==="string"?data.poster:undefined,alt:data.alt};
 }
 export async function publicProjects(){
- const rows=await db.contentEntry.findMany({where:{kind:ContentKind.PROJECT,published:true}});
+ const rows=await db.contentEntry.findMany({where:{kind:ContentKind.PROJECT,published:true,archivedAt:null}});
  if(!rows.length)return projects;
  const overrides=new Map(rows.map(r=>[r.key,projectFrom(r.key,r.title,r.data)]));
  const merged=projects.map(p=>overrides.get(p.slug)??p); const known=new Set(projects.map(p=>p.slug));
@@ -33,13 +33,13 @@ export async function publicProjects(){
 }
 export async function publicProject(slug:string){return (await publicProjects()).find(p=>p.slug===slug)}
 export async function publicReleases(){
- const rows=await db.contentEntry.findMany({where:{kind:ContentKind.RELEASE,published:true}});
+ const rows=await db.contentEntry.findMany({where:{kind:ContentKind.RELEASE,published:true,archivedAt:null}});
  if(!rows.length)return releases;
  const parsed=rows.map(r=>releaseFrom(r.key,r.title,r.data)).filter((x):x is Release=>Boolean(x));
  return parsed.length?parsed:releases;
 }
 export async function publicMedia(slug:string){
- const rows=await db.contentEntry.findMany({where:{kind:ContentKind.MEDIA,published:true}});
+ const rows=await db.contentEntry.findMany({where:{kind:ContentKind.MEDIA,published:true,archivedAt:null}});
  const parsed=rows.map(r=>mediaFrom(r.key,r.title,r.data)).filter((x):x is ProjectMedia=>Boolean(x)).filter(x=>x.projectSlug===slug);
  return parsed.length?parsed:projectMedia.filter(x=>x.projectSlug===slug);
 }

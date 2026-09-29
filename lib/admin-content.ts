@@ -39,3 +39,17 @@ export async function updateContent(actor: AdminActor, id: string, input: { titl
     return item;
   });
 }
+export async function setArchived(actor: AdminActor, id: string, archived: boolean) {
+  assertAdmin(actor);
+  return db.$transaction(async (tx) => {
+    const before = await tx.contentEntry.findUniqueOrThrow({ where: { id } });
+    const after = await tx.contentEntry.update({
+      where: { id },
+      data: { archivedAt: archived ? new Date() : null, published: archived ? false : before.published },
+    });
+    await tx.auditLog.create({
+      data: { actorId: actor.id, action: archived ? "ARCHIVE" : "RESTORE", contentId: after.id, contentKind: after.kind, contentKey: after.key, before: auditJson(before.data), after: auditJson(after.data) },
+    });
+    return after;
+  });
+}

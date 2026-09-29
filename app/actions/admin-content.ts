@@ -3,7 +3,7 @@ import { ContentKind, Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/admin-auth";
-import { createContent, updateContent } from "@/lib/admin-content";
+import { createContent, updateContent, setArchived } from "@/lib/admin-content";
 
 const kinds=new Set(Object.values(ContentKind));
 function json(raw:string):Prisma.InputJsonValue{
@@ -24,4 +24,14 @@ export async function updateContentAction(form:FormData){
   if(!id) throw new Error("INVALID_ID");
   await updateContent(actor,id,{title:String(form.get("title")??""),data:json(String(form.get("data")??"{}")),published:form.get("published")==="on"});
   revalidatePath("/admin"); redirect("/admin?ok=updated");
+}
+export async function archiveContentAction(form: FormData) {
+  const actor = await requireAdmin(); const id = String(form.get("id") ?? "");
+  if (!id) throw new Error("INVALID_ID");
+  await setArchived(actor, id, true); revalidatePath("/admin"); redirect("/admin?ok=archived");
+}
+export async function restoreContentAction(form: FormData) {
+  const actor = await requireAdmin(); const id = String(form.get("id") ?? "");
+  if (!id) throw new Error("INVALID_ID");
+  await setArchived(actor, id, false); revalidatePath("/admin"); redirect("/admin?ok=restored");
 }
