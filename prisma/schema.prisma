@@ -23,6 +23,7 @@ model User {
   updatedAt    DateTime   @updatedAt
   sessions     Session[]
   saves        GameSave[]
+  auditLogs    AuditLog[]
 }
 
 model Session {
@@ -50,4 +51,43 @@ model GameSave {
 
   @@unique([userId, gameKey, slot])
   @@index([gameKey])
+}
+
+enum ContentKind {
+  PROJECT
+  RELEASE
+  MEDIA
+  WEB_GAME
+}
+
+model ContentEntry {
+  id        String      @id @default(cuid())
+  kind      ContentKind
+  key       String
+  title     String
+  data      Json
+  published Boolean     @default(false)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  auditLogs AuditLog[]
+
+  @@unique([kind, key])
+  @@index([kind, published])
+}
+
+model AuditLog {
+  id          String        @id @default(cuid())
+  actorId     String
+  action      String
+  contentId   String?
+  contentKind ContentKind?
+  contentKey  String?
+  before      Json?
+  after       Json?
+  createdAt   DateTime      @default(now())
+  actor       User          @relation(fields: [actorId], references: [id], onDelete: Restrict)
+  content     ContentEntry? @relation(fields: [contentId], references: [id], onDelete: SetNull)
+
+  @@index([actorId, createdAt])
+  @@index([contentId])
 }
