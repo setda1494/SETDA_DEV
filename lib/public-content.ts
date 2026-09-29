@@ -5,6 +5,11 @@ import { releases, type Release } from "@/lib/releases";
 import { projectMedia, type ProjectMedia } from "@/lib/media";
 
 function object(v:unknown):v is Record<string,unknown>{return typeof v==="object"&&v!==null&&!Array.isArray(v)}
+function safeWebEntry(v:unknown):string|undefined{
+ if(typeof v!=="string"||v.includes("..")||/^(file:|[a-z]:\\)/i.test(v))return undefined;
+ if(v.startsWith("/games-content/"))return v;
+ try{const u=new URL(v);return u.protocol==="https:"?v:undefined}catch{return undefined}
+}
 function projectFrom(key:string,title:string,data:unknown):Project|null{
  if(!object(data))return null;
  const base=projects.find(p=>p.slug===key);
@@ -12,7 +17,7 @@ function projectFrom(key:string,title:string,data:unknown):Project|null{
  if(!["web","desktop","service","tool"].includes(String(runtime)))return base??null;
  const tags=Array.isArray(data.tags)?data.tags.filter(object).filter(t=>typeof t.name==="string"&&["language","tool","platform"].includes(String(t.kind))).map(t=>({name:String(t.name),kind:t.kind as "language"|"tool"|"platform"})):[];
  const highlights=Array.isArray(data.highlights)?data.highlights.filter((x):x is string=>typeof x==="string"):[];
- return {slug:key,name:title,category:String(data.category??base?.category??"Software"),description:String(data.description??base?.description??""),summary:String(data.summary??base?.summary??""),status:String(data.status??base?.status??"Active"),featured:Boolean(data.featured??base?.featured),runtime:runtime as Project["runtime"],tags:tags.length?tags:(base?.tags??[]),highlights:highlights.length?highlights:(base?.highlights??[]),repository:typeof data.repository==="string"?data.repository:base?.repository,release:typeof data.release==="string"?data.release:base?.release,webGame:object(data.webGame)?{enabled:data.webGame.enabled===true,entry:typeof data.webGame.entry==="string"?data.webGame.entry:undefined}:base?.webGame};
+ return {slug:key,name:title,category:String(data.category??base?.category??"Software"),description:String(data.description??base?.description??""),summary:String(data.summary??base?.summary??""),status:String(data.status??base?.status??"Active"),featured:Boolean(data.featured??base?.featured),runtime:runtime as Project["runtime"],tags:tags.length?tags:(base?.tags??[]),highlights:highlights.length?highlights:(base?.highlights??[]),repository:typeof data.repository==="string"?data.repository:base?.repository,release:typeof data.release==="string"?data.release:base?.release};
 }
 function releaseFrom(key:string,title:string,data:unknown):Release|null{
  if(!object(data))return null; const state=data.state;
@@ -43,3 +48,16 @@ export async function publicMedia(slug:string){
  const parsed=rows.map(r=>mediaFrom(r.key,r.title,r.data)).filter((x):x is ProjectMedia=>Boolean(x)).filter(x=>x.projectSlug===slug);
  return parsed.length?parsed:projectMedia.filter(x=>x.projectSlug===slug);
 }
+export async function playableWebGames(){
+ const [allProjects,rows]=await Promise.all([publicProjects(),db.contentEntry.findMany({where:{kind:ContentKind.WEB_GAME,published:true,archivedAt:null}})]);
+ const bySlug=new Map(allProjects.map(p=>[p.slug,p]));
+ const games:Project[]=[];
+ for(const row of rows){
+  if(!object(row.data)||row.data.enabled!==true||typeof row.data.projectSlug!=="string")continue;
+  const p=bySlug.get(row.data.projectSlug); const entry=safeWebEntry(row.data.entry);
+  if(!p||p.runtime!=="web"||!entry)continue;
+  games.push({...p,webGame:{enabled:true,entry}});
+ }
+ return games;
+}
+export async function playableWebGame(slug:string){return (await playableWebGames()).find(p=>p.slug===slug)}
