@@ -10,7 +10,9 @@
                     "test:integration":  "node scripts/integration-auth-save.cjs",
                     "test:content":  "node scripts/integration-content.cjs",
                     "test:http":  "node scripts/http-e2e.cjs",
-                    "bootstrap:owner":  "node scripts/bootstrap-owner.cjs"
+                    "bootstrap:owner":  "node scripts/bootstrap-owner.cjs",
+                    "owner:password":  "node scripts/reset-owner-password.cjs",
+                    "test:roles":  "node scripts/integration-roles.cjs"
                 },
     "dependencies":  {
                          "@prisma/client":  "^6.12.0",
