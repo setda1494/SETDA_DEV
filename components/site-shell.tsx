@@ -3,4 +3,21 @@ import { categories } from "@/lib/site-data";
 import { optionalCurrentUser } from "@/lib/auth";
 import { logoutAction } from "@/app/actions/auth";
 import { ShellNav } from "./shell-nav";
-export async function SiteShell({children}:{children:React.ReactNode}){const user=await optionalCurrentUser();return <><header className="topbar"><Link href="/" className="brand"><span className="brand-mark">&gt;_</span><span><b>SETDA1494.DEV</b><small>Developer Hub</small></span></Link><div className="search"><span>⌕</span><span>Search projects, tags, releases...</span><kbd>/</kbd></div><nav className="topnav"><Link href="/projects">Projects</Link><Link href="/games">Games</Link><Link href="/releases">Releases</Link><Link href="/about">About</Link></nav><div className="auth-actions">{user?<><span className="account-chip"><b>{user.displayName}</b><small>{user.role}</small></span>{(user.role==="OWNER"||user.role==="SYSTEM")&&<Link className="btn ghost" href="/admin">Admin</Link>}<form action={logoutAction}><button className="btn ghost" type="submit">Logout</button></form></>:<><Link className="btn ghost" href="/login">Login</Link><Link className="btn primary" href="/register">Create account</Link></>}</div></header><div className="mobile-nav"><Link href="/">Home</Link><Link href="/projects">Projects</Link><Link href="/games">Games</Link><Link href="/releases">Releases</Link></div><div className="app-grid"><ShellNav categories={categories}/><main className="content">{children}<footer><span>SETDA1494.DEV</span><span>Developer Hub</span></footer></main></div></>}
+
+export async function SiteShell({ children }: { children: React.ReactNode }) {
+  const user = await optionalCurrentUser();
+  return <>
+    <header className="topbar">
+      <Link href="/" className="brand"><span className="brand-mark">&gt;_</span><span><b>SETDA1494.DEV</b><small>Developer Hub</small></span></Link>
+      <div className="search"><span>⌕</span><span>Search projects, tags, releases...</span><kbd>/</kbd></div>
+      <nav className="topnav"><Link href="/projects">Projects</Link><Link href="/games">Games</Link><Link href="/releases">Releases</Link><Link href="/about">About</Link></nav>
+      <div className="auth-actions">{user ? <>
+        <Link href="/account" className="account-chip"><b>{user.displayName}</b><small>{user.role}</small></Link>
+        {(user.role === "OWNER" || user.role === "SYSTEM") && <Link className="btn ghost" href="/admin">Admin</Link>}
+        <form action={logoutAction}><button className="btn ghost" type="submit">Logout</button></form>
+      </> : <><Link className="btn ghost" href="/login">Login</Link><Link className="btn primary" href="/register">Create account</Link></>}</div>
+    </header>
+    <div className="mobile-nav"><Link href="/">Home</Link><Link href="/projects">Projects</Link><Link href="/games">Games</Link><Link href="/releases">Releases</Link></div>
+    <div className="app-grid"><ShellNav categories={categories}/><main className="content">{children}<footer><span>SETDA1494.DEV</span><span>Developer Hub</span></footer></main></div>
+  </>;
+}
