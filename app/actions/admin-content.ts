@@ -12,7 +12,7 @@ const optional=(v:string)=>v? v:undefined;
 function parseTags(f:FormData){return list(f,"tags").map(line=>{const i=line.indexOf(":");if(i<1)throw new Error("INVALID_TAG_FORMAT");return{kind:line.slice(0,i).trim(),name:line.slice(i+1).trim()}})}
 function compact<T extends Record<string,unknown>>(value:T){return Object.fromEntries(Object.entries(value).filter(([,v])=>v!==undefined)) as Prisma.InputJsonValue}
 function typed(f:FormData,kind:ContentKind):Prisma.InputJsonValue{
- if(kind===ContentKind.PROJECT)return compact({category:text(f,"category"),description:text(f,"description"),summary:text(f,"summary"),status:text(f,"status"),runtime:text(f,"runtime"),tags:parseTags(f),highlights:list(f,"highlights")});
+ if(kind===ContentKind.PROJECT)return compact({category:text(f,"category"),description:text(f,"description"),summary:text(f,"summary"),status:text(f,"status"),runtime:text(f,"runtime"),tags:parseTags(f),highlights:list(f,"highlights"),featured:f.get("featured")==="on",repository:optional(text(f,"repository")),release:optional(text(f,"release"))});
  if(kind===ContentKind.RELEASE)return compact({projectSlug:text(f,"projectSlug"),artifact:text(f,"artifact"),version:text(f,"version"),platform:text(f,"platform"),state:text(f,"state"),downloadUrl:optional(text(f,"downloadUrl")),size:optional(text(f,"size")),sha256:optional(text(f,"sha256")),publishedAt:optional(text(f,"publishedAt")),changelog:list(f,"changelog")});
  if(kind===ContentKind.MEDIA)return compact({projectSlug:text(f,"projectSlug"),kind:text(f,"mediaKind"),src:text(f,"src"),alt:text(f,"alt"),caption:optional(text(f,"caption")),poster:optional(text(f,"poster"))});
  return compact({projectSlug:text(f,"projectSlug"),enabled:f.get("enabled")==="on",entry:text(f,"entry")});
