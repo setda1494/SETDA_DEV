@@ -14,17 +14,17 @@ enum Role {
 }
 
 model User {
-  id           String         @id @default(cuid())
-  email        String         @unique
-  displayName  String
-  passwordHash String?
-  role         Role           @default(USER)
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
-  sessions     Session[]
-  saves        GameSave[]
-  auditLogs    AuditLog[]
-  ServiceToken ServiceToken[]
+  id            String         @id @default(cuid())
+  email         String         @unique
+  displayName   String
+  passwordHash  String?
+  role          Role           @default(USER)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  sessions      Session[]
+  saves         GameSave[]
+  auditLogs     AuditLog[]
+  serviceTokens ServiceToken[]
 }
 
 model Session {
@@ -107,4 +107,13 @@ model ServiceToken {
 
   @@index([userId])
   @@index([expiresAt])
+}
+
+model RateLimitBucket {
+  key       String   @id
+  count     Int      @default(0)
+  resetAt   DateTime
+  updatedAt DateTime @updatedAt
+
+  @@index([resetAt])
 }
