@@ -16,6 +16,9 @@ A future authenticated API stores saves by user + game + slot + save version. Ga
 ## Artifact storage
 Large builds, installers, ISO, 3MF/STL and other binaries stay outside Git. The database stores version, platform, size, SHA-256 and storage key; production downloads use dedicated file/object storage.
 
+## LLM Wiki integration
+Selected project files are automatically indexed by the SETDA LLM Wiki. Sync runs track document changes, expose recent-change highlights and diffs, and retain a persistent change timeline for project history.
+
 ## Development
 npm run dev
 npm run lint
